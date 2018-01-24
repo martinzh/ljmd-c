@@ -7,7 +7,7 @@ OBJ_SERIAL=$(SRC:src/%.f90=Obj-serial/%.o)
 
 default: serial
 
-serial:
+serial mpi:
 	$(MAKE) $(MFLAGS) -C Obj-$@
 
 clean:
