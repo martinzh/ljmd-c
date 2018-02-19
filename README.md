@@ -31,8 +31,8 @@ make clean
 
 1. Read in parameters, initial position and velocities of atoms and compute what is missing
 2. Integrate equations of motion with velocity verlet for a given number of steps
-   a. Propagate all velocities for half a step
-   b. Propagate all positions for a full step
-   c. Compute forces on all atoms to get accelerations
-   d. Propagate all velocities for half a step
-   e. Output intermediate results if needed
+  - Propagate all velocities for half a step
+  - Propagate all positions for a full step
+  - Compute forces on all atoms to get accelerations
+  - Propagate all velocities for half a step
+  - Output intermediate results if needed
