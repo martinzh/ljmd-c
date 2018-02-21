@@ -4,9 +4,9 @@
 3.405             # sigma in angstrom
 8.5               # rcut in angstrom
 17.1580           # box length (in angstrom)
-examples/argon_108.rest    # restart
-output/argon_108.xyz     # trajectory
-output/argon_108.dat     # energies
-100             # nr MD steps
+argon_108.rest    # restart
+argon_108.xyz     # trajectory
+argon_108.dat     # energies
+10000             # nr MD steps
 5.0               # MD time step (in fs)
 100               # output print frequency
