@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <openmp.h>
+#include <omp.h>
 #include <time.h>
 
 /* generic file- or pathname buffer length */
