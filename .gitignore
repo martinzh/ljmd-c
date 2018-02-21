@@ -1,4 +1,6 @@
 output/
+*.dat
+*.xyz
 
 # Prerequisites
 *.d
