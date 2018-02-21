@@ -94,8 +94,8 @@ static void ekin(mdsys_t *sys)
 /* compute forces */
 static void force(mdsys_t *sys)
 {
-    double r,ffac;
-    double rx,ry,rz;
+    //double r,ffac;
+    //double rx,ry,rz;
     int i,j;
 
     /* zero energy and forces */
@@ -104,6 +104,10 @@ static void force(mdsys_t *sys)
     azzero(sys->fy,sys->natoms);
     azzero(sys->fz,sys->natoms);
 
+    // variable each thread will use to add their contribution
+    double tmp_epot = 0.0;
+
+    #pragma omp parallel for private(i,j) reduction(+: tmp_epot)
     for(i=0; i < (sys->natoms); ++i) {
         for(j=0; j < (sys->natoms); ++j) {
 
@@ -111,17 +115,17 @@ static void force(mdsys_t *sys)
             if (i==j) continue;
 
             /* get distance between particle i and j */
-            rx=pbc(sys->rx[i] - sys->rx[j], 0.5*sys->box);
-            ry=pbc(sys->ry[i] - sys->ry[j], 0.5*sys->box);
-            rz=pbc(sys->rz[i] - sys->rz[j], 0.5*sys->box);
-            r = sqrt(rx*rx + ry*ry + rz*rz);
+           double rx=pbc(sys->rx[i] - sys->rx[j], 0.5*sys->box);
+           double ry=pbc(sys->ry[i] - sys->ry[j], 0.5*sys->box);
+           double rz=pbc(sys->rz[i] - sys->rz[j], 0.5*sys->box);
+           double r = sqrt(rx*rx + ry*ry + rz*rz);
 
             /* compute force and energy if within cutoff */
             if (r < sys->rcut) {
-                ffac = -4.0*sys->epsilon*(-12.0*pow(sys->sigma/r,12.0)/r
+                double ffac = -4.0*sys->epsilon*(-12.0*pow(sys->sigma/r,12.0)/r
                                          +6*pow(sys->sigma/r,6.0)/r);
 
-                sys->epot += 0.5*4.0*sys->epsilon*(pow(sys->sigma/r,12.0)
+                tmp_epot += 0.5*4.0*sys->epsilon*(pow(sys->sigma/r,12.0)
                                                -pow(sys->sigma/r,6.0));
 
                 sys->fx[i] += rx/r*ffac;
@@ -130,6 +134,8 @@ static void force(mdsys_t *sys)
             }
         }
     }
+
+    sys->epot = tmp_epot;
 }
 
 /* velocity verlet */
@@ -138,24 +144,31 @@ static void velverlet(mdsys_t *sys)
     int i;
 
     /* first part: propagate velocities by half and positions by full step */
+//    #pragma omp parallel
+//    {
+    #pragma omp parallel for private(i)
     for (i=0; i<sys->natoms; ++i) {
-        sys->vx[i] += 0.5*sys->dt / mvsq2e * sys->fx[i] / sys->mass;
-        sys->vy[i] += 0.5*sys->dt / mvsq2e * sys->fy[i] / sys->mass;
-        sys->vz[i] += 0.5*sys->dt / mvsq2e * sys->fz[i] / sys->mass;
-        sys->rx[i] += sys->dt*sys->vx[i];
-        sys->ry[i] += sys->dt*sys->vy[i];
-        sys->rz[i] += sys->dt*sys->vz[i];
+       sys->vx[i] += 0.5*sys->dt / mvsq2e * sys->fx[i] / sys->mass;
+       sys->vy[i] += 0.5*sys->dt / mvsq2e * sys->fy[i] / sys->mass;
+       sys->vz[i] += 0.5*sys->dt / mvsq2e * sys->fz[i] / sys->mass;
+       sys->rx[i] += sys->dt*sys->vx[i];
+       sys->ry[i] += sys->dt*sys->vy[i];
+       sys->rz[i] += sys->dt*sys->vz[i];
     }
-
+ //   }
     /* compute forces and potential energy */
     force(sys);
 
     /* second part: propagate velocities by another half step */
+ //   #pragma omp parallel
+ //   {
+    #pragma omp parallel for private(i)
     for (i=0; i<sys->natoms; ++i) {
         sys->vx[i] += 0.5*sys->dt / mvsq2e * sys->fx[i] / sys->mass;
         sys->vy[i] += 0.5*sys->dt / mvsq2e * sys->fy[i] / sys->mass;
         sys->vz[i] += 0.5*sys->dt / mvsq2e * sys->fz[i] / sys->mass;
     }
+ //   }
 }
 
 /* append data to output. */
@@ -179,6 +192,8 @@ int main(int argc, char **argv)
     char restfile[BLEN], trajfile[BLEN], ergfile[BLEN], line[BLEN];
     FILE *fp,*traj,*erg;
     mdsys_t sys;
+
+    int num_th;
 
     /* read input file */
     if(get_a_line(stdin,line)) return 1;
@@ -243,23 +258,25 @@ int main(int argc, char **argv)
     printf("Starting simulation with %d atoms for %d steps.\n",sys.natoms, sys.nsteps);
     printf("     NFI            TEMP            EKIN                 EPOT              ETOT\n");
     output(&sys, erg, traj);
-
+    
+    double start_t = omp_get_wtime();
     /**************************************************/
     /* main MD loop */
     for(sys.nfi=1; sys.nfi <= sys.nsteps; ++sys.nfi) {
 
-        /* write output, if requested */
+    /* write output, if requested */
         if ((sys.nfi % nprint) == 0)
             output(&sys, erg, traj);
 
-        /* propagate system and recompute energies */
+    /* propagate system and recompute energies */
         velverlet(&sys);
         ekin(&sys);
     }
     /**************************************************/
-
+    
     /* clean up: close files, free memory */
-    printf("Simulation Done.\n");
+    printf("Simulation Done. Time elapsed = %4f\n", omp_get_wtime()-start_t);
+//    printf("NThreads = %2d\tTime elapsed = %4f\n", num_th, omp_get_wtime()-start_t);
     fclose(erg);
     fclose(traj);
 
