@@ -327,7 +327,7 @@ int main(int argc, char **argv)
             azzero(sys.fx, sys.natoms);
             azzero(sys.fy, sys.natoms);
             azzero(sys.fz, sys.natoms);
-        }else {
+        } else {
             perror("cannot read restart file");
             return 3;
         }
