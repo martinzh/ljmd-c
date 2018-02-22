@@ -318,7 +318,6 @@ int main(int argc, char **argv)
     /**************************************************/
 
     chunk_size = sys.natoms / num_t;
-    prev_chunk_size = sys.natoms / num_t;
 
     if(sys.natoms % num_t > rank) chunk_size++;
 
