@@ -11,8 +11,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <omp.h>
-#include <time.h>
+#include <mpi.h>
 
 /* generic file- or pathname buffer length */
 #define BLEN 200
@@ -30,6 +29,7 @@ struct _mdsys {
     double *rx, *ry, *rz;
     double *vx, *vy, *vz;
     double *fx, *fy, *fz;
+    int start_idx, end_idx; // start and end atom id for each task
 };
 typedef struct _mdsys mdsys_t;
 
@@ -94,8 +94,8 @@ static void ekin(mdsys_t *sys)
 /* compute forces */
 static void force(mdsys_t *sys)
 {
-    //double r,ffac;
-    //double rx,ry,rz;
+    double r,ffac;
+    double rx,ry,rz;
     int i,j;
 
     /* zero energy and forces */
@@ -104,10 +104,6 @@ static void force(mdsys_t *sys)
     azzero(sys->fy,sys->natoms);
     azzero(sys->fz,sys->natoms);
 
-    // variable each thread will use to add their contribution
-    double tmp_epot = 0.0;
-
-    #pragma omp parallel for private(i,j) reduction(+: tmp_epot)
     for(i=0; i < (sys->natoms); ++i) {
         for(j=0; j < (sys->natoms); ++j) {
 
@@ -115,17 +111,17 @@ static void force(mdsys_t *sys)
             if (i==j) continue;
 
             /* get distance between particle i and j */
-           double rx=pbc(sys->rx[i] - sys->rx[j], 0.5*sys->box);
-           double ry=pbc(sys->ry[i] - sys->ry[j], 0.5*sys->box);
-           double rz=pbc(sys->rz[i] - sys->rz[j], 0.5*sys->box);
-           double r = sqrt(rx*rx + ry*ry + rz*rz);
+            rx=pbc(sys->rx[i] - sys->rx[j], 0.5*sys->box);
+            ry=pbc(sys->ry[i] - sys->ry[j], 0.5*sys->box);
+            rz=pbc(sys->rz[i] - sys->rz[j], 0.5*sys->box);
+            r = sqrt(rx*rx + ry*ry + rz*rz);
 
             /* compute force and energy if within cutoff */
             if (r < sys->rcut) {
-                double ffac = -4.0*sys->epsilon*(-12.0*pow(sys->sigma/r,12.0)/r
+                ffac = -4.0*sys->epsilon*(-12.0*pow(sys->sigma/r,12.0)/r
                                          +6*pow(sys->sigma/r,6.0)/r);
 
-                tmp_epot += 0.5*4.0*sys->epsilon*(pow(sys->sigma/r,12.0)
+                sys->epot += 0.5*4.0*sys->epsilon*(pow(sys->sigma/r,12.0)
                                                -pow(sys->sigma/r,6.0));
 
                 sys->fx[i] += rx/r*ffac;
@@ -134,8 +130,6 @@ static void force(mdsys_t *sys)
             }
         }
     }
-
-    sys->epot = tmp_epot;
 }
 
 /* velocity verlet */
@@ -144,27 +138,24 @@ static void velverlet(mdsys_t *sys)
     int i;
 
     /* first part: propagate velocities by half and positions by full step */
-    #pragma omp parallel for private(i)
     for (i=0; i<sys->natoms; ++i) {
-       sys->vx[i] += 0.5*sys->dt / mvsq2e * sys->fx[i] / sys->mass;
-       sys->vy[i] += 0.5*sys->dt / mvsq2e * sys->fy[i] / sys->mass;
-       sys->vz[i] += 0.5*sys->dt / mvsq2e * sys->fz[i] / sys->mass;
-       sys->rx[i] += sys->dt*sys->vx[i];
-       sys->ry[i] += sys->dt*sys->vy[i];
-       sys->rz[i] += sys->dt*sys->vz[i];
+        sys->vx[i] += 0.5*sys->dt / mvsq2e * sys->fx[i] / sys->mass;
+        sys->vy[i] += 0.5*sys->dt / mvsq2e * sys->fy[i] / sys->mass;
+        sys->vz[i] += 0.5*sys->dt / mvsq2e * sys->fz[i] / sys->mass;
+        sys->rx[i] += sys->dt*sys->vx[i];
+        sys->ry[i] += sys->dt*sys->vy[i];
+        sys->rz[i] += sys->dt*sys->vz[i];
     }
 
     /* compute forces and potential energy */
     force(sys);
 
     /* second part: propagate velocities by another half step */
-    #pragma omp parallel for private(i)
     for (i=0; i<sys->natoms; ++i) {
         sys->vx[i] += 0.5*sys->dt / mvsq2e * sys->fx[i] / sys->mass;
         sys->vy[i] += 0.5*sys->dt / mvsq2e * sys->fy[i] / sys->mass;
         sys->vz[i] += 0.5*sys->dt / mvsq2e * sys->fz[i] / sys->mass;
     }
-
 }
 
 /* append data to output. */
@@ -189,30 +180,38 @@ int main(int argc, char **argv)
     FILE *fp,*traj,*erg;
     mdsys_t sys;
 
-    int num_th;
+    int rank;
+    int num_t;
+    int chunk_size;
 
-    /* read input file */
-    if(get_a_line(stdin,line)) return 1;
-    sys.natoms=atoi(line);
-    if(get_a_line(stdin,line)) return 1;
-    sys.mass=atof(line);
-    if(get_a_line(stdin,line)) return 1;
-    sys.epsilon=atof(line);
-    if(get_a_line(stdin,line)) return 1;
-    sys.sigma=atof(line);
-    if(get_a_line(stdin,line)) return 1;
-    sys.rcut=atof(line);
-    if(get_a_line(stdin,line)) return 1;
-    sys.box=atof(line);
-    if(get_a_line(stdin,restfile)) return 1;
-    if(get_a_line(stdin,trajfile)) return 1;
-    if(get_a_line(stdin,ergfile)) return 1;
-    if(get_a_line(stdin,line)) return 1;
-    sys.nsteps=atoi(line);
-    if(get_a_line(stdin,line)) return 1;
-    sys.dt=atof(line);
-    if(get_a_line(stdin,line)) return 1;
-    nprint=atoi(line);
+    MPI_Init(int *argc, char ***argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_t);
+
+    if( rank == 0){
+        /* read input file */
+        if(get_a_line(stdin,line)) return 1;
+        sys.natoms=atoi(line);
+        if(get_a_line(stdin,line)) return 1;
+        sys.mass=atof(line);
+        if(get_a_line(stdin,line)) return 1;
+        sys.epsilon=atof(line);
+        if(get_a_line(stdin,line)) return 1;
+        sys.sigma=atof(line);
+        if(get_a_line(stdin,line)) return 1;
+        sys.rcut=atof(line);
+        if(get_a_line(stdin,line)) return 1;
+        sys.box=atof(line);
+        if(get_a_line(stdin,restfile)) return 1;
+        if(get_a_line(stdin,trajfile)) return 1;
+        if(get_a_line(stdin,ergfile)) return 1;
+        if(get_a_line(stdin,line)) return 1;
+        sys.nsteps=atoi(line);
+        if(get_a_line(stdin,line)) return 1;
+        sys.dt=atof(line);
+        if(get_a_line(stdin,line)) return 1;
+        nprint=atoi(line);
+    }
 
     /* allocate memory */
     sys.rx=(double *)malloc(sys.natoms*sizeof(double));
@@ -226,21 +225,23 @@ int main(int argc, char **argv)
     sys.fz=(double *)malloc(sys.natoms*sizeof(double));
 
     /* read restart */
-    fp=fopen(restfile,"r");
-    if(fp) {
-        for (i=0; i<sys.natoms; ++i) {
-            fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
+    if(rank == 0){
+        fp=fopen(restfile,"r");
+        if(fp) {
+            for (i=0; i<sys.natoms; ++i) {
+                fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
+            }
+            for (i=0; i<sys.natoms; ++i) {
+                fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
+            }
+            fclose(fp);
+            azzero(sys.fx, sys.natoms);
+            azzero(sys.fy, sys.natoms);
+            azzero(sys.fz, sys.natoms);
+        } else {
+            perror("cannot read restart file");
+            return 3;
         }
-        for (i=0; i<sys.natoms; ++i) {
-            fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
-        }
-        fclose(fp);
-        azzero(sys.fx, sys.natoms);
-        azzero(sys.fy, sys.natoms);
-        azzero(sys.fz, sys.natoms);
-    } else {
-        perror("cannot read restart file");
-        return 3;
     }
 
     /* initialize forces and energies.*/
@@ -255,24 +256,28 @@ int main(int argc, char **argv)
     printf("     NFI            TEMP            EKIN                 EPOT              ETOT\n");
     output(&sys, erg, traj);
 
-    double start_t = omp_get_wtime();
+    /**************************************************/
+
+    chunk_size = sys.natoms / num_t;
+
+    if(rank == 0) printf("chunk_size = %4d\n", chunk_size);
+
     /**************************************************/
     /* main MD loop */
-    for(sys.nfi=1; sys.nfi <= sys.nsteps; ++sys.nfi) {
-
-    /* write output, if requested */
-        if ((sys.nfi % nprint) == 0)
-            output(&sys, erg, traj);
-
-    /* propagate system and recompute energies */
-        velverlet(&sys);
-        ekin(&sys);
-    }
+    // for(sys.nfi=1; sys.nfi <= sys.nsteps; ++sys.nfi) {
+    //
+    //     /* write output, if requested */
+    //     if ((sys.nfi % nprint) == 0)
+    //         output(&sys, erg, traj);
+    //
+    //     /* propagate system and recompute energies */
+    //     velverlet(&sys);
+    //     ekin(&sys);
+    // }
     /**************************************************/
 
     /* clean up: close files, free memory */
-    printf("Simulation Done. Time elapsed = %4f\n", omp_get_wtime()-start_t);
-//    printf("NThreads = %2d\tTime elapsed = %4f\n", num_th, omp_get_wtime()-start_t);
+    printf("Simulation Done.\n");
     fclose(erg);
     fclose(traj);
 
@@ -285,6 +290,8 @@ int main(int argc, char **argv)
     free(sys.fx);
     free(sys.fy);
     free(sys.fz);
+
+    MPI_Finalize();
 
     return 0;
 }
