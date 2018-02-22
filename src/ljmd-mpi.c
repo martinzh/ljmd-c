@@ -301,15 +301,15 @@ int main(int argc, char **argv)
     ////////////////////////////////////////////////////
 
     /* allocate memory */
-    // sys.rx=(double *)malloc(sys.natoms*sizeof(double));
-    // sys.ry=(double *)malloc(sys.natoms*sizeof(double));
-    // sys.rz=(double *)malloc(sys.natoms*sizeof(double));
-    // sys.vx=(double *)malloc(sys.natoms*sizeof(double));
-    // sys.vy=(double *)malloc(sys.natoms*sizeof(double));
-    // sys.vz=(double *)malloc(sys.natoms*sizeof(double));
-    // sys.fx=(double *)malloc(sys.natoms*sizeof(double));
-    // sys.fy=(double *)malloc(sys.natoms*sizeof(double));
-    // sys.fz=(double *)malloc(sys.natoms*sizeof(double));
+    sys.rx=(double *)malloc(sys.natoms*sizeof(double));
+    sys.ry=(double *)malloc(sys.natoms*sizeof(double));
+    sys.rz=(double *)malloc(sys.natoms*sizeof(double));
+    sys.vx=(double *)malloc(sys.natoms*sizeof(double));
+    sys.vy=(double *)malloc(sys.natoms*sizeof(double));
+    sys.vz=(double *)malloc(sys.natoms*sizeof(double));
+    sys.fx=(double *)malloc(sys.natoms*sizeof(double));
+    sys.fy=(double *)malloc(sys.natoms*sizeof(double));
+    sys.fz=(double *)malloc(sys.natoms*sizeof(double));
 
     ////////////////////////////////////////////////////
 
@@ -399,15 +399,15 @@ int main(int argc, char **argv)
    //     fclose(traj);
    // }
 
-   // free(sys.rx);
-   // free(sys.ry);
-   // free(sys.rz);
-   // free(sys.vx);
-   // free(sys.vy);
-   // free(sys.vz);
-   // free(sys.fx);
-   // free(sys.fy);
-   // free(sys.fz);
+   free(sys.rx);
+   free(sys.ry);
+   free(sys.rz);
+   free(sys.vx);
+   free(sys.vy);
+   free(sys.vz);
+   free(sys.fx);
+   free(sys.fy);
+   free(sys.fz);
 
     MPI_Type_free(&ParametersType);
     MPI_Finalize();
