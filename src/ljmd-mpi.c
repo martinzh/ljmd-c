@@ -316,7 +316,7 @@ int main(int argc, char **argv)
     /* read restart */
     if(rank == 0){
         fp=fopen(restfile,"r");
-        printf("%s\n", restfile);
+        // printf("%s\n", restfile);
         if(fp) {
             for (i=0; i<sys.natoms; ++i) {
                 fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
