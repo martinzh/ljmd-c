@@ -40,7 +40,6 @@ struct _params{
 
 typedef struct _params params_t;
 
-
 /* helper function: read a line and then return
    the first string with whitespace stripped off */
 static int get_a_line(FILE *fp, char *buf)
@@ -186,15 +185,17 @@ int main(int argc, char **argv)
     int nprint, i;
     char restfile[BLEN], trajfile[BLEN], ergfile[BLEN], line[BLEN];
     FILE *fp,*traj,*erg;
-  
+
     mdsys_t sys;
-    params_t par_sys; // to send parameters to other pr 
+    params_t par_sys; // to send parameters to other pr
 
     int rank;
     int num_t;
-   
+
     int chunk_size;
-    int local_chunk_size;
+
+    int start_id;
+    int end_id;
 
     MPI_Init(NULL, NULL);
 
@@ -237,11 +238,11 @@ int main(int argc, char **argv)
 
     }
 
-    MPI_Datatype ParametersType; 
-    MPI_Datatype type[2] = {MPI_INT, MPI_DOUBLE}; 
-    int          blocklen[2] = {3,6}; 
+    MPI_Datatype ParametersType;
+    MPI_Datatype type[2] = {MPI_INT, MPI_DOUBLE};
+    int          blocklen[2] = {3,6};
     MPI_Aint     displacements[2];
-    
+
     MPI_Address(&par_sys.p_ints, &displacements[0]);
     MPI_Address(&par_sys.p_doubles, &displacements[1]);
 
@@ -250,7 +251,7 @@ int main(int argc, char **argv)
 
     MPI_Type_struct( 2, blocklen, displacements, type, &ParametersType);
     MPI_Type_commit( &ParametersType);
-    
+
     MPI_Bcast(&par_sys, 1, ParametersType, 0, MPI_COMM_WORLD);
 
     if( rank != 0){
@@ -308,14 +309,20 @@ int main(int argc, char **argv)
     sys.nfi=0;
     //force(&sys);
     //ekin(&sys);
-    
+
     /**************************************************/
 
-    chunk_size = par_sys.p_ints[0] / num_t;
+    chunk_size = sys.natoms / num_t;
 
-    if(par_sys.p_ints[0] % num_t > rank) chunk_size++;
+    if(sys.natoms % num_t > rank) chunk_size++;
 
-    printf("rank %2d chunk_size = %4d total atoms = %6d\n", rank, chunk_size, sys.natoms);
+    // printf("rank %2d chunk_size = %4d total atoms = %6d\n", rank, chunk_size, sys.natoms);
+
+    start_id = rank * chunk_size;
+    end_id = start_id + chunk_size;
+
+    printf("rank %2d start_id = %4d end_id = %4d\n", rank, start_id, end_id);
+
 
     /**************************************************/
     /* main MD loop */
