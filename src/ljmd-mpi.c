@@ -207,6 +207,8 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_t);
 
+    ////////////////////////////////////////////////////
+
     if(rank == 0){
         /* read input file */
         if(get_a_line(stdin,line)) return 1;
@@ -243,6 +245,8 @@ int main(int argc, char **argv)
 
     }
 
+    ////////////////////////////////////////////////////
+
     MPI_Datatype ParametersType;
     MPI_Datatype type[2] = {MPI_INT, MPI_DOUBLE};
     int          blocklen[2] = {3,6};
@@ -259,6 +263,8 @@ int main(int argc, char **argv)
 
     MPI_Bcast(&par_sys, 1, ParametersType, 0, MPI_COMM_WORLD);
 
+    ////////////////////////////////////////////////////
+
     if( rank != 0){
         sys.natoms = par_sys.p_ints[0];
         sys.nfi = par_sys.p_ints[1];
@@ -271,16 +277,20 @@ int main(int argc, char **argv)
         sys.rcut = par_sys.p_doubles[5];
     }
 
+    ////////////////////////////////////////////////////
+
     /* allocate memory */
-   sys.rx=(double *)malloc(sys.natoms*sizeof(double));
-   sys.ry=(double *)malloc(sys.natoms*sizeof(double));
-   sys.rz=(double *)malloc(sys.natoms*sizeof(double));
-   sys.vx=(double *)malloc(sys.natoms*sizeof(double));
-   sys.vy=(double *)malloc(sys.natoms*sizeof(double));
-   sys.vz=(double *)malloc(sys.natoms*sizeof(double));
-   sys.fx=(double *)malloc(sys.natoms*sizeof(double));
-   sys.fy=(double *)malloc(sys.natoms*sizeof(double));
-   sys.fz=(double *)malloc(sys.natoms*sizeof(double));
+    sys.rx=(double *)malloc(sys.natoms*sizeof(double));
+    sys.ry=(double *)malloc(sys.natoms*sizeof(double));
+    sys.rz=(double *)malloc(sys.natoms*sizeof(double));
+    sys.vx=(double *)malloc(sys.natoms*sizeof(double));
+    sys.vy=(double *)malloc(sys.natoms*sizeof(double));
+    sys.vz=(double *)malloc(sys.natoms*sizeof(double));
+    sys.fx=(double *)malloc(sys.natoms*sizeof(double));
+    sys.fy=(double *)malloc(sys.natoms*sizeof(double));
+    sys.fz=(double *)malloc(sys.natoms*sizeof(double));
+
+    ////////////////////////////////////////////////////
 
     /* read restart */
     if(rank == 0){
@@ -293,7 +303,7 @@ int main(int argc, char **argv)
                fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
            }
            fclose(fp);
-        } else {
+        }else {
            perror("cannot read restart file");
            return 3;
         }
@@ -306,20 +316,22 @@ int main(int argc, char **argv)
         output(&sys, erg, traj);
     }
 
+    ////////////////////////////////////////////////////
+
     azzero(sys.fx, sys.natoms);
     azzero(sys.fy, sys.natoms);
     azzero(sys.fz, sys.natoms);
 
-    MPI_Bcast(&sys.rx, 1, ParametersType, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&sys.ry, 1, ParametersType, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&sys.rz, 1, ParametersType, 0, MPI_COMM_WORLD);
+    // MPI_Bcast(&sys.rx, 1, ParametersType, 0, MPI_COMM_WORLD);
+    // MPI_Bcast(&sys.ry, 1, ParametersType, 0, MPI_COMM_WORLD);
+    // MPI_Bcast(&sys.rz, 1, ParametersType, 0, MPI_COMM_WORLD);
 
     /* initialize forces and energies.*/
     sys.nfi=0;
     //force(&sys);
     //ekin(&sys);
 
-    /**************************************************/
+    ////////////////////////////////////////////////////
 
     chunk_size = sys.natoms / num_t;
 
@@ -344,7 +356,8 @@ int main(int argc, char **argv)
     printf("rank %2d start_id = %4d end_id = %4d chunk = %4d\n", rank, start_id, end_id, end_id - start_id);
 
 
-    /**************************************************/
+    ////////////////////////////////////////////////////
+
     /* main MD loop */
     // for(sys.nfi=1; sys.nfi <= sys.nsteps; ++sys.nfi) {
     //
@@ -356,7 +369,8 @@ int main(int argc, char **argv)
     //     velverlet(&sys);
     //     ekin(&sys);
     // }
-    /**************************************************/
+
+    ////////////////////////////////////////////////////
 
     /* clean up: close files, free memory */
    if(rank == 0){
