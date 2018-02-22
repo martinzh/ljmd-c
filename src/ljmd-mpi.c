@@ -283,32 +283,37 @@ int main(int argc, char **argv)
    sys.fz=(double *)malloc(sys.natoms*sizeof(double));
 
     /* read restart */
-   // fp=fopen(restfile,"r");
-   // if(fp) {
-   //     for (i=0; i<sys.natoms; ++i) {
-   //         fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
-   //     }
-   //     for (i=0; i<sys.natoms; ++i) {
-   //         fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
-   //     }
-   //     fclose(fp);
-   //     azzero(sys.fx, sys.natoms);
-   //     azzero(sys.fy, sys.natoms);
-   //     azzero(sys.fz, sys.natoms);
-   // } else {
-   //     perror("cannot read restart file");
-   //     return 3;
-   // }
+    if(rank == 0){
+        fp=fopen(restfile,"r");
+        if(fp) {
+           for (i=0; i<sys.natoms; ++i) {
+               fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
+           }
+           for (i=0; i<sys.natoms; ++i) {
+               fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
+           }
+           fclose(fp);
+        } else {
+           perror("cannot read restart file");
+           return 3;
+        }
 
-   // if(rank == 0){
-   // erg=fopen(ergfile,"w");
-   // traj=fopen(trajfile,"w");
+        erg=fopen(ergfile,"w");
+        traj=fopen(trajfile,"w");
 
-   // printf("Starting simulation with %d atoms for %d steps.\n",sys.natoms, sys.nsteps);
-   // printf("     NFI            TEMP            EKIN                 EPOT              ETOT\n");
-   // output(&sys, erg, traj);
-   // }
+        printf("Starting simulation with %d atoms for %d steps.\n",sys.natoms, sys.nsteps);
+        printf("     NFI            TEMP            EKIN                 EPOT              ETOT\n");
+        output(&sys, erg, traj);
+        }
+    }
 
+    azzero(sys.fx, sys.natoms);
+    azzero(sys.fy, sys.natoms);
+    azzero(sys.fz, sys.natoms);
+
+    MPI_Bcast(&rx, 1, ParametersType, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&ry, 1, ParametersType, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&rz, 1, ParametersType, 0, MPI_COMM_WORLD);
 
     /* initialize forces and energies.*/
     sys.nfi=0;
@@ -335,7 +340,6 @@ int main(int argc, char **argv)
 
         if(rank < num_t -1) MPI_Isend(&end_id, 1, MPI_INT, rank+1, 0, MPI_COMM_WORLD, &request);
     }
-
 
     // printf("rank %2d chunk_size = %4d total atoms = %6d\n", rank, chunk_size, sys.natoms);
     printf("rank %2d start_id = %4d end_id = %4d chunk = %4d\n", rank, start_id, end_id, end_id - start_id);
