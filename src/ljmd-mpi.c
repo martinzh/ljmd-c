@@ -193,13 +193,11 @@ int main(int argc, char **argv)
     int num_t;
 
     int chunk_size;
-    int prev_chunk_size;
 
     int start_id;
-    int prev_start_id;
+    int temp_start_id;
 
     int end_id;
-    int prev_end_id;
 
     MPI_Init(NULL, NULL);
 
@@ -328,14 +326,17 @@ int main(int argc, char **argv)
         start_id = 0;
         end_id = chunk_size;
         MPI_Isend(&end_id, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, &request);
+    }else{
+        MPI_Irecv(&temp_start_id, 1, MPI_INT, rank-1, 0, MPI_COMM_WORLD, &request);
+        MPI_Wait(&request, &status);
+
+        start_id = temp_start_id + 1;
+
+        end_id = temp_start_id + chunk_size;
+
+        if(rank < num_t -1) MPI_ISend(&end_id, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
     }
 
-    MPI_Irecv(&start_id, 1, MPI_INT, rank-1, 0, MPI_COMM_WORLD, &request);
-    MPI_Wait(&request, &status);
-
-    end_id = start_id + chunk_size;
-
-    if(rank < num_t -1) MPI_ISend(&end_id, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
 
     // printf("rank %2d chunk_size = %4d total atoms = %6d\n", rank, chunk_size, sys.natoms);
     printf("rank %2d start_id = %4d end_id = %4d\n", rank, start_id, end_id);
