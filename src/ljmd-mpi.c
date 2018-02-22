@@ -333,7 +333,7 @@ int main(int argc, char **argv)
 
         end_id = temp_start_id + chunk_size;
 
-        if(rank < num_t -1) MPI_Isend(&end_id, 1, MPI_INT, rank+1, 0, MPI_COMM_WORLD);
+        if(rank < num_t -1) MPI_Isend(&end_id, 1, MPI_INT, rank+1, 0, MPI_COMM_WORLD, &request);
     }
 
 
