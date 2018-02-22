@@ -344,9 +344,9 @@ int main(int argc, char **argv)
     azzero(sys.fy, sys.natoms);
     azzero(sys.fz, sys.natoms);
 
-    MPI_Bcast(&sys.rx, 1, ParametersType, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&sys.ry, 1, ParametersType, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&sys.rz, 1, ParametersType, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&sys.rx, sys.natoms, ParametersType, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&sys.ry, sys.natoms, ParametersType, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&sys.rz, sys.natoms, ParametersType, 0, MPI_COMM_WORLD);
 
     /* initialize forces and energies.*/
     sys.nfi=0;
