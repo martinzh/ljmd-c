@@ -265,6 +265,8 @@ int main(int argc, char **argv)
     mdsys_t sys;
     params_t par_sys; // to send parameters to other pr
 
+    double *b_rx, *b_ry, *b_rz;
+
     int rank;
     int num_t;
 
@@ -366,6 +368,11 @@ int main(int argc, char **argv)
     sys.fy=(double *)malloc(sys.natoms*sizeof(double));
     sys.fz=(double *)malloc(sys.natoms*sizeof(double));
 
+    // buffer receivers
+    b_rx=(double *)malloc(sys.natoms*sizeof(double));
+    b_ry=(double *)malloc(sys.natoms*sizeof(double));
+    b_rz=(double *)malloc(sys.natoms*sizeof(double));
+
     ////////////////////////////////////////////////////
 
     /* read restart */
@@ -433,6 +440,9 @@ int main(int argc, char **argv)
     sys.nfi=0;
     force_local(&sys, start_id, end_id);
     ekin_local(&sys, start_id, end_id);
+
+    // MPI_Allgather(void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+    MPI_Allgather(sys.rx, sys.numatoms, MPI_DOUBLE, b_rx, sys.numatoms, MPI_DOUBLE, MPI_COMM_WORLD);
 
     ////////////////////////////////////////////////////
 
