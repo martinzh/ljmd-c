@@ -314,31 +314,31 @@ int main(int argc, char **argv)
     ////////////////////////////////////////////////////
 
     /* read restart */
-    // if(rank == 0){
-    //     fp=fopen(restfile,"r");
-    //     if(fp) {
-    //         for (i=0; i<sys.natoms; ++i) {
-    //             fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
-    //         }
-    //         for (i=0; i<sys.natoms; ++i) {
-    //             fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
-    //         }
-    //         fclose(fp);
-    //         azzero(sys.fx, sys.natoms);
-    //         azzero(sys.fy, sys.natoms);
-    //         azzero(sys.fz, sys.natoms);
-    //     }else {
-    //         perror("cannot read restart file");
-    //         return 3;
-    //     }
-    //
-    //     erg=fopen(ergfile,"w");
-    //     traj=fopen(trajfile,"w");
-    //
-    //     printf("Starting simulation with %d atoms for %d steps.\n",sys.natoms, sys.nsteps);
-    //     printf("     NFI            TEMP            EKIN                 EPOT              ETOT\n");
-    //     output(&sys, erg, traj);
-    // }
+    if(rank == 0){
+        fp=fopen(restfile,"r");
+        if(fp) {
+            for (i=0; i<sys.natoms; ++i) {
+                fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
+            }
+            for (i=0; i<sys.natoms; ++i) {
+                fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
+            }
+            fclose(fp);
+            azzero(sys.fx, sys.natoms);
+            azzero(sys.fy, sys.natoms);
+            azzero(sys.fz, sys.natoms);
+        }else {
+            perror("cannot read restart file");
+            return 3;
+        }
+
+        erg=fopen(ergfile,"w");
+        traj=fopen(trajfile,"w");
+
+        printf("Starting simulation with %d atoms for %d steps.\n",sys.natoms, sys.nsteps);
+        printf("     NFI            TEMP            EKIN                 EPOT              ETOT\n");
+        output(&sys, erg, traj);
+    }
 
     ////////////////////////////////////////////////////
 
@@ -393,11 +393,11 @@ int main(int argc, char **argv)
     ////////////////////////////////////////////////////
 
     /* clean up: close files, free memory */
-   // if(rank == 0){
-   //     printf("Simulation Done.\n");
-   //     fclose(erg);
-   //     fclose(traj);
-   // }
+   if(rank == 0){
+       printf("Simulation Done.\n");
+       fclose(erg);
+       fclose(traj);
+   }
 
    free(sys.rx);
    free(sys.ry);
