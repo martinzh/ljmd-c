@@ -467,6 +467,10 @@ int main(int argc, char **argv)
        fclose(traj);
    }
 
+   free(b_rx);
+   free(b_ry);
+   free(b_rz);
+
    free(sys.rx);
    free(sys.ry);
    free(sys.rz);
