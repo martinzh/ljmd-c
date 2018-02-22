@@ -431,8 +431,8 @@ int main(int argc, char **argv)
 
     /* initialize forces and energies.*/
     sys.nfi=0;
-    force_local(&sys);
-    ekin_local(&sys);
+    force_local(&sys, start_id, end_id);
+    ekin_local(&sys, start_id, end_id);
 
     ////////////////////////////////////////////////////
 
