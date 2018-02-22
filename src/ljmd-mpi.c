@@ -311,9 +311,9 @@ int main(int argc, char **argv)
     azzero(sys.fy, sys.natoms);
     azzero(sys.fz, sys.natoms);
 
-    MPI_Bcast(&rx, 1, ParametersType, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&ry, 1, ParametersType, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&rz, 1, ParametersType, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&sys.rx, 1, ParametersType, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&sys.ry, 1, ParametersType, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&sys.rz, 1, ParametersType, 0, MPI_COMM_WORLD);
 
     /* initialize forces and energies.*/
     sys.nfi=0;
@@ -360,12 +360,11 @@ int main(int argc, char **argv)
     /**************************************************/
 
     /* clean up: close files, free memory */
-    //printf("Simulation Done.\n");
-
-   // if(rank == 0){
-   //     fclose(erg);
-   //     fclose(traj);
-   // }
+   if(rank == 0){
+       printf("Simulation Done.\n");
+       fclose(erg);
+       fclose(traj);
+   }
 
    free(sys.rx);
    free(sys.ry);
