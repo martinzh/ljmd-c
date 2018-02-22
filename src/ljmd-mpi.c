@@ -16,9 +16,13 @@
 /* generic file- or pathname buffer length */
 #define BLEN 200
 
+////////////////////////////////////////////////////
+
 /* a few physical constants */
 const double kboltz=0.0019872067;     /* boltzman constant in kcal/mol/K */
 const double mvsq2e=2390.05736153349; /* m*v^2 in kcal/mol */
+
+////////////////////////////////////////////////////
 
 /* structure to hold the complete information
  * about the MD system */
@@ -33,12 +37,16 @@ struct _mdsys {
 
 typedef struct _mdsys mdsys_t;
 
+////////////////////////////////////////////////////
+
 struct _params{
     int p_ints[3];
     double p_doubles[6];
 };
 
 typedef struct _params params_t;
+
+////////////////////////////////////////////////////
 
 /* helper function: read a line and then return
    the first string with whitespace stripped off */
@@ -69,6 +77,8 @@ static int get_a_line(FILE *fp, char *buf)
     return 0;
 }
 
+////////////////////////////////////////////////////
+
 /* helper function: zero out an array */
 static void azzero(double *d, const int n)
 {
@@ -78,6 +88,8 @@ static void azzero(double *d, const int n)
     }
 }
 
+////////////////////////////////////////////////////
+
 /* helper function: apply minimum image convention */
 static double pbc(double x, const double boxby2)
 {
@@ -85,6 +97,8 @@ static double pbc(double x, const double boxby2)
     while (x < -boxby2) x += 2.0*boxby2;
     return x;
 }
+
+////////////////////////////////////////////////////
 
 /* compute kinetic energy */
 static void ekin(mdsys_t *sys)
@@ -97,6 +111,8 @@ static void ekin(mdsys_t *sys)
     }
     sys->temp = 2.0*sys->ekin/(3.0*sys->natoms-3.0)/kboltz;
 }
+
+////////////////////////////////////////////////////
 
 /* compute forces */
 static void force(mdsys_t *sys)
@@ -139,6 +155,8 @@ static void force(mdsys_t *sys)
     }
 }
 
+////////////////////////////////////////////////////
+
 /* velocity verlet */
 static void velverlet(mdsys_t *sys)
 {
@@ -165,6 +183,8 @@ static void velverlet(mdsys_t *sys)
     }
 }
 
+////////////////////////////////////////////////////
+
 /* append data to output. */
 static void output(mdsys_t *sys, FILE *erg, FILE *traj)
 {
@@ -178,6 +198,7 @@ static void output(mdsys_t *sys, FILE *erg, FILE *traj)
     }
 }
 
+////////////////////////////////////////////////////
 
 /* main */
 int main(int argc, char **argv)
@@ -280,47 +301,46 @@ int main(int argc, char **argv)
     ////////////////////////////////////////////////////
 
     /* allocate memory */
-    sys.rx=(double *)malloc(sys.natoms*sizeof(double));
-    sys.ry=(double *)malloc(sys.natoms*sizeof(double));
-    sys.rz=(double *)malloc(sys.natoms*sizeof(double));
-    sys.vx=(double *)malloc(sys.natoms*sizeof(double));
-    sys.vy=(double *)malloc(sys.natoms*sizeof(double));
-    sys.vz=(double *)malloc(sys.natoms*sizeof(double));
-    sys.fx=(double *)malloc(sys.natoms*sizeof(double));
-    sys.fy=(double *)malloc(sys.natoms*sizeof(double));
-    sys.fz=(double *)malloc(sys.natoms*sizeof(double));
+    // sys.rx=(double *)malloc(sys.natoms*sizeof(double));
+    // sys.ry=(double *)malloc(sys.natoms*sizeof(double));
+    // sys.rz=(double *)malloc(sys.natoms*sizeof(double));
+    // sys.vx=(double *)malloc(sys.natoms*sizeof(double));
+    // sys.vy=(double *)malloc(sys.natoms*sizeof(double));
+    // sys.vz=(double *)malloc(sys.natoms*sizeof(double));
+    // sys.fx=(double *)malloc(sys.natoms*sizeof(double));
+    // sys.fy=(double *)malloc(sys.natoms*sizeof(double));
+    // sys.fz=(double *)malloc(sys.natoms*sizeof(double));
 
     ////////////////////////////////////////////////////
 
     /* read restart */
-    if(rank == 0){
-        fp=fopen(restfile,"r");
-        if(fp) {
-           for (i=0; i<sys.natoms; ++i) {
-               fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
-           }
-           for (i=0; i<sys.natoms; ++i) {
-               fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
-           }
-           fclose(fp);
-        }else {
-           perror("cannot read restart file");
-           return 3;
-        }
-
-        erg=fopen(ergfile,"w");
-        traj=fopen(trajfile,"w");
-
-        printf("Starting simulation with %d atoms for %d steps.\n",sys.natoms, sys.nsteps);
-        printf("     NFI            TEMP            EKIN                 EPOT              ETOT\n");
-        output(&sys, erg, traj);
-    }
+    // if(rank == 0){
+    //     fp=fopen(restfile,"r");
+    //     if(fp) {
+    //         for (i=0; i<sys.natoms; ++i) {
+    //             fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
+    //         }
+    //         for (i=0; i<sys.natoms; ++i) {
+    //             fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
+    //         }
+    //         fclose(fp);
+    //         azzero(sys.fx, sys.natoms);
+    //         azzero(sys.fy, sys.natoms);
+    //         azzero(sys.fz, sys.natoms);
+    //     }else {
+    //         perror("cannot read restart file");
+    //         return 3;
+    //     }
+    //
+    //     erg=fopen(ergfile,"w");
+    //     traj=fopen(trajfile,"w");
+    //
+    //     printf("Starting simulation with %d atoms for %d steps.\n",sys.natoms, sys.nsteps);
+    //     printf("     NFI            TEMP            EKIN                 EPOT              ETOT\n");
+    //     output(&sys, erg, traj);
+    // }
 
     ////////////////////////////////////////////////////
-
-    azzero(sys.fx, sys.natoms);
-    azzero(sys.fy, sys.natoms);
-    azzero(sys.fz, sys.natoms);
 
     // MPI_Bcast(&sys.rx, 1, ParametersType, 0, MPI_COMM_WORLD);
     // MPI_Bcast(&sys.ry, 1, ParametersType, 0, MPI_COMM_WORLD);
@@ -373,21 +393,21 @@ int main(int argc, char **argv)
     ////////////////////////////////////////////////////
 
     /* clean up: close files, free memory */
-   if(rank == 0){
-       printf("Simulation Done.\n");
-       fclose(erg);
-       fclose(traj);
-   }
+   // if(rank == 0){
+   //     printf("Simulation Done.\n");
+   //     fclose(erg);
+   //     fclose(traj);
+   // }
 
-   free(sys.rx);
-   free(sys.ry);
-   free(sys.rz);
-   free(sys.vx);
-   free(sys.vy);
-   free(sys.vz);
-   free(sys.fx);
-   free(sys.fy);
-   free(sys.fz);
+   // free(sys.rx);
+   // free(sys.ry);
+   // free(sys.rz);
+   // free(sys.vx);
+   // free(sys.vy);
+   // free(sys.vz);
+   // free(sys.fx);
+   // free(sys.fy);
+   // free(sys.fz);
 
     MPI_Type_free(&ParametersType);
     MPI_Finalize();
