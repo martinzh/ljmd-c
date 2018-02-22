@@ -442,7 +442,7 @@ int main(int argc, char **argv)
     ekin_local(&sys, start_id, end_id);
 
     // MPI_Allgather(void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
-    MPI_Allgather(sys.rx, sys.numatoms, MPI_DOUBLE, b_rx, sys.numatoms, MPI_DOUBLE, MPI_COMM_WORLD);
+    MPI_Allgather(sys.rx, sys.natoms, MPI_DOUBLE, b_rx, sys.natoms, MPI_DOUBLE, MPI_COMM_WORLD);
 
     ////////////////////////////////////////////////////
 
