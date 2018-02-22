@@ -327,10 +327,10 @@ int main(int argc, char **argv)
     if(rank == 0){
         start_id = 0;
         end_id = chunk_size;
-        MPI_Isend(&end_id, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+        MPI_Isend(&end_id, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, &request);
     }
 
-    MPI_Irecv(&start_id, 1, MPI_INT, rank-1, 0, MPI_COMM_WORLD);
+    MPI_Irecv(&start_id, 1, MPI_INT, rank-1, 0, MPI_COMM_WORLD, &request);
     MPI_Wait(&request, &status);
 
     end_id = start_id + chunk_size;
