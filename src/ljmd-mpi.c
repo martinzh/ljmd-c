@@ -316,6 +316,7 @@ int main(int argc, char **argv)
     /* read restart */
     if(rank == 0){
         fp=fopen(restfile,"r");
+        printf("%s\n", restfile);
         if(fp) {
             for (i=0; i<sys.natoms; ++i) {
                 fscanf(fp,"%lf%lf%lf",sys.rx+i, sys.ry+i, sys.rz+i);
@@ -324,9 +325,6 @@ int main(int argc, char **argv)
                 fscanf(fp,"%lf%lf%lf",sys.vx+i, sys.vy+i, sys.vz+i);
             }
             fclose(fp);
-            azzero(sys.fx, sys.natoms);
-            azzero(sys.fy, sys.natoms);
-            azzero(sys.fz, sys.natoms);
         } else {
             perror("cannot read restart file");
             return 3;
@@ -341,6 +339,10 @@ int main(int argc, char **argv)
     }
 
     ////////////////////////////////////////////////////
+
+    azzero(sys.fx, sys.natoms);
+    azzero(sys.fy, sys.natoms);
+    azzero(sys.fz, sys.natoms);
 
     // MPI_Bcast(&sys.rx, 1, ParametersType, 0, MPI_COMM_WORLD);
     // MPI_Bcast(&sys.ry, 1, ParametersType, 0, MPI_COMM_WORLD);
